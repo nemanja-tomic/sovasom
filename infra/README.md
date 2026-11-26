@@ -193,7 +193,7 @@ uv run --frozen python scripts/configure-github.py
 ```
 
 It reads the AWS/DNS inputs and applied foundation outputs from Terraform, detects
-this checkout's GitHub repository, and prompts once for the mini's SSH destination,
+this checkout's GitHub repository, and prompts once for the mini's SSH destination/port,
 deployment directory, archive namespace and three existing private files:
 
 - The dedicated deployment SSH private key, without a passphrase (Actions uses
@@ -220,6 +220,12 @@ or output. Credential exports are restricted to mode 0600. Answers and file path
 are saved in ignored `.scratch/private/deployment.json` (0600); secret contents
 remain in their original private files. Keep the saved configuration private too.
 An alternate `--config` path must also be gitignored.
+
+SSH defaults to port 22. For a custom port, pass `--ssh-port 2222` or answer
+the port prompt; keep `ssh_host` as `user@host`, without `:port`. For a nondefault
+port, the independently verified host-key entry must use `[host]:port` (for
+example `[mini.example.com]:2222`). Host setup, deployments and backups all use
+the uploaded `BACKUP_SSH_PORT`; existing configurations without it keep port 22.
 
 For later runs, including replacing GitHub's setup secret after removing its
 one-time `bootstrap` object from the local host setup JSON:
@@ -253,6 +259,7 @@ or Terraform output below, then select **Add variable**.
 | `APP_HOSTNAME` | Application input `app_hostname` | Sets the DNS record name |
 | `PUBLIC_IPV4` | Application input `public_ipv4` | Sets the DNS destination |
 | `BACKUP_SSH_HOST` | Saved SSH destination | Connects backups and deployments to the mini |
+| `BACKUP_SSH_PORT` | Saved SSH port, default 22 | Selects the external SSH port for every host operation |
 | `DEPLOY_ROOT` | Saved private absolute directory | Holds releases and external runtime files |
 | `BACKUP_DIRECTORY` | Derived `<DEPLOY_ROOT>/current` | Selects the accepted release for backups |
 | `BACKUP_PREFIX` | Saved archive namespace | Separates archives in the backup bucket |

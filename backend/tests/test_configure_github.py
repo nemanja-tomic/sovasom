@@ -113,10 +113,11 @@ def test_setup_uploads_complete_configuration_using_stdin_without_printing_paylo
     result = run()
     assert result.returncode == 0, result.stderr
     uploads = [entry for entry in records(log) if "set" in entry["args"]]
-    assert len(uploads) == 15  # Eight infrastructure + four host variables + three secrets.
+    assert len(uploads) == 16  # Eight infrastructure + five host variables + three secrets.
     values = {entry["args"][2]: entry["payload"] for entry in uploads}
     assert values["BACKUP_DIRECTORY"] == "/Users/deploy/Library/Application Support/office/current"
     assert values["BACKUP_PREFIX"] == "archives/fictional-office/"
+    assert values["BACKUP_SSH_PORT"] == "22"
     assert values["BACKUP_SSH_KEY"] == "synthetic private key\nsecond line\n"
     assert json.loads(values["HOST_SETUP_JSON"]) == json.loads(setup.read_text())
     assert all("--body" not in entry["args"] for entry in uploads)
@@ -181,6 +182,7 @@ def test_first_run_prompts_once_then_reuses_saved_settings(operator):
             "deploy@mini.example.com",
             "",
             "",
+            "",
             initial["ssh_identity"],
             initial["known_hosts"],
             str(setup),
@@ -214,3 +216,15 @@ def test_repository_inputs_must_be_untracked_and_ignored_before_uploads(operator
     assert result.returncode != 0
     assert "untracked and gitignored" in result.stderr
     assert not any("set" in entry["args"] for entry in records(log))
+
+
+def test_custom_port_uploads_separately_and_looks_up_bracketed_host_key(operator):
+    run, config, setup, log = operator
+    result = run("--ssh-port", "2222")
+    assert result.returncode == 0, result.stderr
+    entries = records(log)
+    values = {entry["args"][2]: entry["payload"] for entry in entries if "set" in entry["args"]}
+    assert values["BACKUP_SSH_HOST"] == "deploy@mini.example.com"
+    assert values["BACKUP_SSH_PORT"] == "2222"
+    assert json.loads(config.read_text())["ssh_port"] == "2222"
+    assert any(entry["args"][:2] == ["-F", "[mini.example.com]:2222"] for entry in entries)

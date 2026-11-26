@@ -26,6 +26,7 @@ jobs:
       id-token: write
     env:
       BACKUP_HOST: ${{ vars.BACKUP_SSH_HOST }}
+      BACKUP_PORT: ${{ vars.BACKUP_SSH_PORT || '22' }}
       BACKUP_DIRECTORY: ${{ vars.BACKUP_DIRECTORY }}
       BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET_NAME }}
       BACKUP_PREFIX: ${{ vars.BACKUP_PREFIX }}
@@ -46,9 +47,10 @@ jobs:
       - name: Create private transport configuration
         run: |
           umask 077
-          python3 - <<'PY'
+          uv run --frozen python - <<'PY'
           import json, os
           from pathlib import Path
+          from scripts.backup import ssh_port
           root = Path(os.environ['RUNNER_TEMP'])
           required = ['BACKUP_HOST', 'BACKUP_DIRECTORY', 'BACKUP_BUCKET', 'BACKUP_PREFIX',
                       'BACKUP_KNOWN_HOSTS', 'BACKUP_SSH_KEY']
@@ -58,6 +60,7 @@ jobs:
           (root / 'backup-hosts').write_text(os.environ['BACKUP_KNOWN_HOSTS'] + '\n')
           (root / 'backup.json').write_text(json.dumps({
               'host': os.environ['BACKUP_HOST'], 'directory': os.environ['BACKUP_DIRECTORY'],
+              'port': ssh_port(os.environ['BACKUP_PORT']),
               'bucket': os.environ['BACKUP_BUCKET'], 'prefix': os.environ['BACKUP_PREFIX'],
               'known_hosts': str(root / 'backup-hosts'), 'ssh_identity': str(root / 'backup-key'),
           }))

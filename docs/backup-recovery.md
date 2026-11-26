@@ -29,10 +29,12 @@ passed. The synthetic recovery workflow does not establish production readiness.
    retaining old private keys; it does not re-encrypt old archives.
 3. Configure GitHub variables `BACKUP_ROLE_ARN`, `AWS_ACCOUNT_ID`,
    `BACKUP_BUCKET_NAME` from the existing foundation outputs. Set
-   `BACKUP_SSH_HOST` (user@host), `BACKUP_DIRECTORY` (absolute checkout directory),
+   `BACKUP_SSH_HOST` (user@host), `BACKUP_SSH_PORT` (default 22), `BACKUP_DIRECTORY` (absolute checkout directory),
    and `BACKUP_PREFIX` (dedicated `archives/…/` namespace). Set secrets
    `BACKUP_SSH_KEY` and `BACKUP_KNOWN_HOSTS`. Obtain the host key through an
    independently verified channel; `ssh-keyscan` alone does not verify it.
+   For a custom port, its known-hosts name must be `[hostname]:port`; local
+   backup controller JSON accepts a separate `port` field (default 22).
    Use a dedicated least-privilege host account/key. No private age key is a
    GitHub secret. Never print rendered configuration or upload secret files.
 4. Enable Actions failure notifications for the operator and test actual receipt

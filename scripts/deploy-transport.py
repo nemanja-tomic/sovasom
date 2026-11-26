@@ -4,6 +4,8 @@ import json
 import os
 from pathlib import Path
 
+from backup import ssh_port
+
 os.umask(0o077)
 root = Path(os.environ["RUNNER_TEMP"])
 required = [
@@ -22,6 +24,7 @@ if not all(os.environ.get(key) for key in required):
     json.dumps(
         {
             "host": os.environ["DEPLOY_HOST"],
+            "port": ssh_port(os.environ.get("DEPLOY_SSH_PORT", "22")),
             "directory": os.environ["DEPLOY_ROOT"],
             "bucket": os.environ["BACKUP_BUCKET"],
             "prefix": os.environ["BACKUP_PREFIX"],

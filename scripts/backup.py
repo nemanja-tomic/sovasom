@@ -30,6 +30,13 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def ssh_port(value=22):
+    text = str(value)
+    if not re.fullmatch(r"[0-9]{1,5}", text) or not 1 <= int(text) <= 65535:
+        raise ValueError("SSH port must be an integer from 1 to 65535.")
+    return str(int(text))
+
+
 class Transfer:
     def __init__(self, config):
         self.config = config
@@ -42,6 +49,8 @@ class Transfer:
         self.ssh = [
             "ssh",
             "-T",
+            "-p",
+            ssh_port(config.get("port", 22)),
             "-o",
             "BatchMode=yes",
             "-o",

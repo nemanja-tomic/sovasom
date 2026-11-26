@@ -58,10 +58,13 @@ Terraform plus private files. It saves host settings/file paths under ignored
 The following describes the entries that command manages.
 
 Configure repository variables `DEPLOY_ROOT`, `BACKUP_SSH_HOST` (user@host),
+`BACKUP_SSH_PORT` (external SSH port; defaults to 22),
 `BACKUP_BUCKET_NAME`, `BACKUP_PREFIX`, `BACKUP_ROLE_ARN`, `AWS_ACCOUNT_ID` as in
 [backup recovery](backup-recovery.md). Set `BACKUP_DIRECTORY` to `<root>/current`.
 The dedicated `BACKUP_SSH_KEY` is shared by serialized backup/release operations;
-`BACKUP_KNOWN_HOSTS` pins the verified host identity. Restrict both to trusted jobs.
+`BACKUP_KNOWN_HOSTS` pins the verified host identity. For custom SSH ports its
+entry must match `[hostname]:port`; use `configure-github.py --ssh-port 2222`
+to upload a custom port. Restrict both secrets to trusted jobs.
 The backup AWS role uses OIDC, never a permanent AWS credential on the mini.
 
 Set repository secret `HOST_SETUP_JSON` with keys `hostname`, `database_password`,

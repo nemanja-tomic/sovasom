@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from backup import ssh_port
+
 REPOSITORY = Path(__file__).resolve().parents[1]
 APPLICATION_INPUTS = (
     "AWS_ACCOUNT_ID=var.aws_account_id, HOSTED_ZONE_ID=var.hosted_zone_id, "
@@ -100,8 +102,12 @@ def prepare(config, non_interactive, parent):
 
     host = collect(config, "ssh_host", "Mini SSH destination (user@host)", non_interactive)
     if not re.fullmatch(r"[a-zA-Z0-9_.-]+@[a-zA-Z0-9_.-]+", host):
-        raise ConfigurationError("ssh_host must be user@host (standard SSH port 22).")
+        raise ConfigurationError("ssh_host must be user@host; configure the port separately.")
     username, hostname = host.split("@")
+    if "ssh_port" in config:
+        config["ssh_port"] = ssh_port(config["ssh_port"])
+    port = ssh_port(collect(config, "ssh_port", "Mini SSH port", non_interactive, "22"))
+    config["ssh_port"] = port
     root = collect(
         config,
         "deploy_root",
@@ -132,7 +138,8 @@ def prepare(config, non_interactive, parent):
     hosts, _ = secret_file(
         config, "known_hosts", "Independently verified known_hosts file", non_interactive, parent
     )
-    matching_hosts = run("ssh-keygen", "-F", hostname, "-f", str(hosts))
+    host_lookup = hostname if port == "22" else f"[{hostname}]:{port}"
+    matching_hosts = run("ssh-keygen", "-F", host_lookup, "-f", str(hosts))
     known_hosts = (
         "\n".join(line for line in matching_hosts.splitlines() if line and not line.startswith("#"))
         + "\n"
@@ -182,6 +189,7 @@ def prepare(config, non_interactive, parent):
             )
     variables.update(
         BACKUP_SSH_HOST=host,
+        BACKUP_SSH_PORT=port,
         DEPLOY_ROOT=root,
         BACKUP_DIRECTORY=f"{root}/current",
         BACKUP_PREFIX=prefix,
@@ -199,6 +207,7 @@ def main():
     parser.add_argument(
         "--config", type=Path, default=REPOSITORY / ".scratch/private/deployment.json"
     )
+    parser.add_argument("--ssh-port", type=ssh_port, help="Override the saved SSH port")
     parser.add_argument("--non-interactive", action="store_true")
     parser.add_argument(
         "--check", action="store_true", help="Validate inputs without GitHub writes"
@@ -213,6 +222,8 @@ def main():
         config = json.loads(config_path.read_text()) if config_path.exists() else {}
         if config_path.exists():
             config_path.chmod(0o600)
+        if args.ssh_port is not None:
+            config["ssh_port"] = args.ssh_port
         repository, variables, secrets = prepare(config, args.non_interactive, config_path.parent)
         print(
             f"Validated {len(variables)} variables and {len(secrets)} secrets. No payloads printed."

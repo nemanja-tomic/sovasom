@@ -264,3 +264,27 @@ def test_compatible_rollback_starts_retained_release(host):
     assert result.returncode == 0, result.stderr
     assert json.loads((root / "active.json").read_text())["release"] == "b" * 40
     assert (root / "current").resolve() == prior
+
+
+def test_runner_transport_preserves_custom_port(tmp_path):
+    result = subprocess.run(
+        [sys.executable, str(REPO / "scripts/deploy-transport.py")],
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "RUNNER_TEMP": str(tmp_path),
+            "DEPLOY_HOST": "deploy@mini.example.com",
+            "DEPLOY_SSH_PORT": "2222",
+            "DEPLOY_ROOT": "/srv/office",
+            "BACKUP_BUCKET": "fictional-backups",
+            "BACKUP_PREFIX": "archives/office/",
+            "DEPLOY_SSH_KEY": "synthetic-private-key",
+            "DEPLOY_KNOWN_HOSTS": "[mini.example.com]:2222 synthetic-public-key",
+        },
+    )
+    assert result.returncode == 0, result.stderr
+    config = json.loads((tmp_path / "deploy.json").read_text())
+    assert config["port"] == "2222"
+    assert config["host"] == "deploy@mini.example.com"
+    assert "synthetic-private-key" not in result.stdout + result.stderr

@@ -19,7 +19,9 @@ def transfer(tmp_path):
     state.mkdir()
     # Synthetic SSH transport and S3 service: persist ciphertext across CLI invocations.
     for name, source in {
-        "ssh": """import os, sys
+        "ssh": """import json, os, sys
+from pathlib import Path
+Path(os.environ['S3_TEST'], 'ssh.json').write_text(json.dumps(sys.argv[1:]))
 if os.environ.get('FAIL_SSH'): sys.exit(1)
 if 'probe' in sys.argv[-1]: print(os.environ.get('DB_STATE', 'existing'))
 elif 'setup.py' in sys.argv[-1]:
@@ -145,3 +147,26 @@ def test_failed_upload_does_not_replace_previous_success(transfer):
     assert successes[0].read_bytes() == previous
     assert len(list(state.glob("*success*"))) == 1
     assert run("status").returncode == 0
+
+
+def test_backup_uses_configured_ssh_port_without_changing_destination(transfer):
+    run, state = transfer
+    config = state.parent / "backup.json"
+    values = json.loads(config.read_text())
+    values["port"] = 2222
+    config.write_text(json.dumps(values))
+    assert run().returncode == 0
+    arguments = json.loads((state / "ssh.json").read_text())
+    assert arguments[arguments.index("-p") + 1] == "2222"
+    assert "backup@mini.example.com" in arguments
+
+
+@pytest.mark.parametrize("port", [0, 65536, "-oProxyCommand=bad", True])
+def test_invalid_ssh_port_prevents_transport(transfer, port):
+    run, state = transfer
+    config = state.parent / "backup.json"
+    values = json.loads(config.read_text())
+    values["port"] = port
+    config.write_text(json.dumps(values))
+    assert run().returncode != 0
+    assert not (state / "ssh.json").exists()
