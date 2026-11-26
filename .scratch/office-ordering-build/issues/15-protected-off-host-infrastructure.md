@@ -25,3 +25,23 @@ Use the approved spec and its resolved decision provenance as authority. No prod
 Implemented separate retained-foundation/application Terraform roots, private encrypted/versioned storage, retained bucket guards, scoped OIDC roles, native state locking, DNS management, CI checks and recovery/onboarding documentation. Public examples contain placeholders; actual configuration and deployment verification belong in private local inputs and operator notes.
 
 Automated validation includes Terraform schema checks and synthetic plans, local-state destroy protection, onboarding fixtures, public-example enforcement, linting and commit checks. The operator requested manual infrastructure application. Keep this ticket open until isolated live provisioning/recovery evidence is complete; do not apply infrastructure without a new operator request.
+
+### Operator confirmation — 26 November 2026
+
+The operator confirmed the following acceptance progress; these are operator
+reports rather than new agent-executed checks. Deployment identifiers and detailed
+evidence remain in private operator records.
+
+- [x] Foundation state migrated to S3, followed by a no-change plan.
+- [x] Saved DNS plan applied.
+- [x] GitHub repository variables configured and the infrastructure plan workflow
+  succeeded through OIDC.
+- [ ] Exercise application teardown on isolated disposable resources and verify
+  retained storage/contents/state history survive; verify foundation destroy-plan
+  protection there as well.
+- [ ] Confirm independent recovery access and retain the operational evidence
+  privately.
+
+Live lock contention, state-version recovery and least-privilege permission checks
+remain unconfirmed by this update. Their synthetic equivalents already pass.
+The ticket remains open until the outstanding operational acceptance is evidenced.
