@@ -1,17 +1,17 @@
 # 15: Establish protected off-host infrastructure
 
-Status: ready-for-agent
+Status: done
 Blocked by: None (can start immediately)
 Parent: [Approved office-ordering specification](../../office-ordering/spec.md)
 
 **What to build:** The operator can bootstrap protected AWS infrastructure, keep Terraform state recoverable off the mini and plan application teardown without losing retained storage.
 
-- [ ] Create reproducible Terraform foundations for separate private S3 backup/state buckets in Frankfurt eu-central-1, encryption, public-access blocking, bucket/access policies, scoped IAM roles, OIDC trust and state version history. Use separate retained-foundation and disposable-application roots/states; application references retained infrastructure.
-- [ ] Bootstrap using an authenticated operator session, establish native S3 locking with use_lockfile enabled, migrate initial state to the protected remote backend and document independent operator recovery. Keep Terraform state sensitive even when application secrets are excluded.
-- [ ] Reuse/reference or deliberately import shared existing hosted zone and OIDC provider. Define the application DNS record using actual setup inputs. Scope GitHub trust to the real repository and intended trusted branch/environment subject; separate narrow infrastructure and backup workflow roles.
+- [x] Create reproducible Terraform foundations for separate private S3 backup/state buckets in Frankfurt eu-central-1, encryption, public-access blocking, bucket/access policies, scoped IAM roles, OIDC trust and state version history. Use separate retained-foundation and disposable-application roots/states; application references retained infrastructure.
+- [x] Bootstrap using an authenticated operator session, establish native S3 locking with use_lockfile enabled, migrate initial state to the protected remote backend and document independent operator recovery. Keep Terraform state sensitive even when application secrets are excluded.
+- [x] Reuse/reference or deliberately import shared existing hosted zone and OIDC provider. Define the application DNS record using actual setup inputs. Scope GitHub trust to the real repository and intended trusted branch/environment subject; separate narrow infrastructure and backup workflow roles.
 - [x] Normal application destroy retains foundation buckets and contents. Retained buckets use prevent_destroy enabled and force_destroy disabled; foundation destroy planning fails with guards present. Explain configuration-removal/direct-AWS deletion limits and explicit full retirement. Backup expiry continues after app teardown; preserve state history/current state independently.
-- [ ] Keep secret payloads out of Terraform inputs/state and avoid ownership overlap with Compose/host automation or Caddy TLS keys. Resolve actual identifiers, repository access and provider pins as setup configuration; do not fabricate provisioned resources or credentials.
-- [ ] Run format/validation and inspect plans, remote locking/version recovery, scoped role/bucket permissions and separate state ownership. Use disposable resources for live smoke tests, verify retained resources on application teardown and guard failure on foundation destroy plans, and record actual evidence. Never perform a production destructive verification.
+- [x] Keep secret payloads out of Terraform inputs/state and avoid ownership overlap with Compose/host automation or Caddy TLS keys. Resolve actual identifiers, repository access and provider pins as setup configuration; do not fabricate provisioned resources or credentials.
+- [x] Run format/validation and inspect plans, remote locking/version recovery, scoped role/bucket permissions and separate state ownership. Use disposable resources for live smoke tests, verify retained resources on application teardown and guard failure on foundation destroy plans, and record actual evidence. Never perform a production destructive verification.
 
 ## Implementation and verification context
 
@@ -39,7 +39,7 @@ evidence remain in private operator records.
 - [x] Exercise application teardown on isolated disposable resources and verify
   retained storage/contents/state history survive; verify foundation destroy-plan
   protection there as well.
-- [ ] Confirm independent recovery access and retain the operational evidence
+- [x] Confirm independent recovery access and retain the operational evidence
   privately.
 
 Live lock contention, state-version recovery and least-privilege permission checks
@@ -74,3 +74,30 @@ Detailed command logs, inventories and reports remain under the ignored
 Timed lifecycle expiry and backup-format restoration were not tested here.
 Independent recovery access/handoff remains for operator confirmation; the ticket
 is not marked done by this verification.
+
+### Independent recovery drill — 26 November 2026
+
+The operator confirmed independent access to IAM sign-in details and MFA/recovery
+access. A private source/configuration bundle was then exercised in fresh
+directories with a fresh provider cache and GitHub credentials removed from the
+verification environment. Both existing remote backends initialized, listed
+existing resources and produced no-change plans. Downloaded versioned state
+objects matched each root's current lineage and serial. No infrastructure changes
+were applied.
+
+The initial foundation plan caught a local ownership mismatch: the private input
+disabled OIDC provider creation while this foundation owned the provider. The
+destruction guard blocked removal. Correcting only that private flag yielded a
+no-change plan; the corrected input is included in the recovery bundle.
+
+The bundle contains source, private setup/backend configuration, instructions and
+a verification summary, without credentials, session caches, provider caches or
+state/plan files. Detailed evidence remains ignored and private. Checks covered
+fresh directories on the operator workstation using the existing personal IAM
+session, not a second physical machine or a new interactive login.
+
+The operator subsequently confirmed the bundle was saved independently. Together
+with the independently accessible IAM/MFA recovery details, this completes the
+handoff and ticket #15. Real assumed-role service calls and a second-machine
+interactive login were not exercised by these checks. Timed archive expiry and
+database restoration remain in ticket #16; host deployment remains in ticket #17.

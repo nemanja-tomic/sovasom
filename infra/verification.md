@@ -41,4 +41,29 @@ check. Detailed evidence is retained privately under the ignored
   deployment DNS and state versions were unchanged throughout the test.
 
 This check establishes teardown retention, not timed archive expiry or database
-backup restoration. Independent recovery access remains an operator handoff item.
+backup restoration.
+
+## Independent infrastructure recovery verification
+
+The operator confirmed that IAM sign-in details and MFA/recovery access are
+available independently of the mini and GitHub Actions.
+
+- A private source/configuration bundle was used to initialize both existing S3
+  backends in fresh directories with a fresh provider cache. GitHub credentials
+  were removed from the verification process environment.
+- Both roots listed existing resources and produced no-change plans. A versioned
+  state object from each backend was downloaded and its lineage/serial matched
+  Terraform's current state. No infrastructure changes were applied.
+- The first foundation plan exposed a private input mismatch: OIDC provider
+  creation was disabled while that root owned the existing provider. Its
+  destruction guard blocked removal. Only the private ownership flag was
+  corrected before the successful repeat.
+- The private bundle contains source, setup inputs, backend locations, recovery
+  instructions and a verification summary. Its checksum and private-file
+  permissions were checked; credentials, session caches, provider caches and
+  state/plan files are excluded.
+
+This was a fresh-directory test on the operator workstation, using its existing
+personal IAM session; a second physical machine and a new interactive login were
+not tested. The operator confirmed that the bundle was saved in independently
+accessible private storage, completing the infrastructure recovery handoff.

@@ -314,12 +314,30 @@ Never test production destruction or overwrite production state.
   make this check pass, and do not apply that plan. The offline test also proves
   this behavior with synthetic state, but does not establish live IAM behavior.
 
-After losing the mini, authenticate on another trusted operator machine, clone
-the repository, restore non-secret setup configuration and initialize each root
-against the existing state bucket. No original host, GitHub deployment token or
-private key from the mini is required. Inspect state/versions and a no-change
-plan. Ticket 16 supplies the separate encrypted database restore with a vault-held
-private identity. Preserve old decryption identities until their archives expire.
+Keep a private recovery bundle in a password manager or encrypted storage that
+you can access without the mini, GitHub Actions or the current checkout:
+
+- [ ] Retain your own IAM sign-in details and MFA/recovery access independently.
+  Keep credentials outside the bundle and repository.
+- [ ] Save a source snapshot/revision, both roots' private `terraform.tfvars` and
+  `production.tfbackend` files, and the foundation's active `backend.tf`. Include
+  the account, state bucket/key locations and the existing OIDC provider's
+  ownership choice. Exclude `.terraform`, session caches, application secrets and
+  local state/plan files. Keep detailed operational evidence separately and privately.
+- [ ] On a trusted workstation, follow the [local setup guide](local-setup/README.md)
+  with your own IAM identity. Restore the bundle into a private directory and
+  adjust only the personal profile names if necessary.
+- [ ] Initialize each root against its **existing** backend using
+  `init -reconfigure -backend-config=production.tfbackend -lockfile=readonly`.
+  Do not repeat bootstrap or create new empty state. Inspect state resources,
+  retrieve a versioned state object and run a no-change plan before any apply.
+- [ ] Confirm the saved bundle is independently accessible. Refresh it when
+  configuration, state locations, ownership or source revision changes.
+
+No original host, GitHub deployment token or private key from the mini is required
+for these infrastructure checks. Ticket 16 supplies the separate encrypted
+database restore with a vault-held private identity. Preserve old decryption
+identities until their archives expire.
 
 ## Teardown and full retirement
 
