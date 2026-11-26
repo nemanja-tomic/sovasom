@@ -179,47 +179,63 @@ addresses, not passwords or access keys.
 
 Configure them **once for the repository**, not once per developer. Install
 [GitHub CLI](https://cli.github.com/) and sign in with your own GitHub account
-that can administer this repository's Actions variables:
+that can administer this repository's Actions variables and secrets:
 
 ```sh
 gh auth login
 ```
 
-Then run the block below from the repository root with Python 3 available.
-It reads all values from your local Terraform inputs and applied foundation
-outputs, and detects the repository from your current checkout. Nothing needs
-to be copied from a public example or entered into this document. All reads
-complete before the first GitHub variable is changed. Rerunning updates values.
+Have the pinned `uv` and `age` tools plus `ssh-keygen`, authenticated GitHub CLI
+and Terraform available on PATH. Run the setup command from the repository root:
 
 ```sh
-python3 - <<'PYTHON'
-import json
-import subprocess
-
-
-def read(*command):
-    return subprocess.check_output(command, text=True).strip()
-
-
-repository = read("gh", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")
-expression = "jsonencode({AWS_ACCOUNT_ID=var.aws_account_id, HOSTED_ZONE_ID=var.hosted_zone_id, APP_HOSTNAME=var.app_hostname, PUBLIC_IPV4=var.public_ipv4})"
-encoded = subprocess.check_output(
-    ["terraform", "-chdir=infra/application", "console"], input=expression + "\n", text=True
-)
-values = json.loads(json.loads(encoded))
-for variable, output in {
-    "TF_STATE_BUCKET": "state_bucket_name",
-    "BACKUP_BUCKET_NAME": "backup_bucket_name",
-    "INFRASTRUCTURE_ROLE_ARN": "infrastructure_role_arn",
-    "BACKUP_ROLE_ARN": "backup_role_arn",
-}.items():
-    values[variable] = read("terraform", "-chdir=infra/foundation", "output", "-raw", output)
-for name, value in values.items():
-    subprocess.run(
-        ["gh", "variable", "set", name, "--repo", repository, "--body", value], check=True
-    )
-PYTHON
+uv run --frozen python scripts/configure-github.py
 ```
+
+It reads the AWS/DNS inputs and applied foundation outputs from Terraform, detects
+this checkout's GitHub repository, and prompts once for the mini's SSH destination,
+deployment directory, archive namespace and three existing private files:
+
+- The dedicated deployment SSH private key, without a passphrase (Actions uses
+  noninteractive SSH). Its public key must be installed for the deployment user.
+- A `known_hosts` file whose mini host key you have independently verified. The
+  command checks the destination has an entry; it does not establish trust for you.
+- The host setup JSON described in [Mac mini deployment](../docs/mac-mini-deployment.md#configuration-and-custody),
+  containing the hostname, database password, public age backup recipient and,
+  for first initialization only, bootstrap account credentials. Export these from
+  your password manager; keep originals and private backup recovery keys there.
+
+Keep credential exports outside the checkout or in ignored `.scratch/private/`
+files; tracked/unignored input files inside the checkout are rejected.
+
+The command derives `BACKUP_DIRECTORY` as `<DEPLOY_ROOT>/current`, defaults the
+archive namespace to `archives/<owner>-<repository>/` (normalizing punctuation), and reuses the Terraform
+hostname to validate the setup JSON. Relative private-file paths resolve against
+the configuration file's directory; absolute paths work too. It does not generate
+or rotate credentials or start a host setup/deployment workflow.
+
+All inputs are read and validated before the first GitHub write. Variables and
+multiline secrets are uploaded on stdin, without payloads in command arguments
+or output. Credential exports are restricted to mode 0600. Answers and file paths
+are saved in ignored `.scratch/private/deployment.json` (0600); secret contents
+remain in their original private files. Keep the saved configuration private too.
+An alternate `--config` path must also be gitignored.
+
+For later runs, including replacing GitHub's setup secret after removing its
+one-time `bootstrap` object from the local host setup JSON:
+
+```sh
+# Validate all inputs and access without uploading anything.
+uv run --frozen python scripts/configure-github.py --non-interactive --check
+# Upload/update every required variable and secret using saved inputs.
+uv run --frozen python scripts/configure-github.py --non-interactive
+```
+
+GitHub updates are individual API operations, not a transaction. If an upload
+fails, correct access and rerun; previously uploaded entries are updated in place.
+The command reports the names updated and never prints their values. No AWS access
+keys or private age decryption identities are uploaded. GitHub supplies GHCR's
+job-scoped token and the release workflow supplies image digests automatically.
 
 See the saved values in your GitHub repository under **Settings → Secrets and
 variables → Actions → Variables → Repository variables**. For manual editing,
@@ -236,6 +252,15 @@ or Terraform output below, then select **Add variable**.
 | `HOSTED_ZONE_ID` | Application input `hosted_zone_id` | Selects the existing public zone |
 | `APP_HOSTNAME` | Application input `app_hostname` | Sets the DNS record name |
 | `PUBLIC_IPV4` | Application input `public_ipv4` | Sets the DNS destination |
+| `BACKUP_SSH_HOST` | Saved SSH destination | Connects backups and deployments to the mini |
+| `DEPLOY_ROOT` | Saved private absolute directory | Holds releases and external runtime files |
+| `BACKUP_DIRECTORY` | Derived `<DEPLOY_ROOT>/current` | Selects the accepted release for backups |
+| `BACKUP_PREFIX` | Saved archive namespace | Separates archives in the backup bucket |
+
+The command also uploads repository secrets `BACKUP_SSH_KEY`, `BACKUP_KNOWN_HOSTS`
+and `HOST_SETUP_JSON` from the private input files. They appear under the adjacent
+**Secrets** tab. Follow the host setup and credential-removal steps in the
+[deployment runbook](../docs/mac-mini-deployment.md).
 
 These values are not passwords, but they still identify your deployment. Store
 them in local ignored configuration and your own repository's Actions settings,

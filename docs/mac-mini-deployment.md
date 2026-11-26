@@ -51,6 +51,12 @@ repository, account, DNS, configuration and evidence out of tracked files.
 Use repository secrets where environment features are unavailable; protect main
 and workflow administration. Test/PR jobs receive synthetic credentials only.
 
+Run `uv run --frozen python scripts/configure-github.py` from the repository root
+to upload all infrastructure/deployment variables and the three secrets from
+Terraform plus private files. It saves host settings/file paths under ignored
+`.scratch/private/` for reruns; see [the complete setup instructions](../infra/README.md#3-give-github-actions-its-configuration).
+The following describes the entries that command manages.
+
 Configure repository variables `DEPLOY_ROOT`, `BACKUP_SSH_HOST` (user@host),
 `BACKUP_BUCKET_NAME`, `BACKUP_PREFIX`, `BACKUP_ROLE_ARN`, `AWS_ACCOUNT_ID` as in
 [backup recovery](backup-recovery.md). Set `BACKUP_DIRECTORY` to `<root>/current`.
