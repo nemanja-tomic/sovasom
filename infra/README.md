@@ -1,7 +1,7 @@
 # AWS infrastructure and operator recovery
 
-Use the [onboarding checklists](../docs/onboarding-checklists.md) for the developer
-and shared-environment sequences; this runbook contains their detailed commands.
+Start with the [onboarding checklists](../docs/onboarding-checklists.md).
+This runbook is the detailed command reference for the shared-environment path.
 
 Ticket 15 owns AWS storage, policies, workflow identities and the application DNS
 record. The Mac mini, Docker, runtime `.env`, containers, database volumes and

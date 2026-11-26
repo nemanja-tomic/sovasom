@@ -4,6 +4,13 @@ A private office home for coffee and bakery trips. This first slice supports run
 
 The modular FastAPI application lives in `backend/office` (accounts/access first), with SQLAlchemy and schema-only Alembic migrations. `frontend/src/design-system` owns Postcard Club tokens and accessible primitives; React 19/Vite builds the SPA. Caddy serves the build and the same-origin `/api` proxy. PostgreSQL has persistent storage and no published port. A worker will use the backend image when durable work is introduced.
 
+## Onboarding
+
+**Start with the [onboarding checklists](docs/onboarding-checklists.md).**
+They guide new developers through personal setup and operators through shared
+environment setup, linking to the detailed commands below and in the infrastructure
+guides. Use the checklist to choose your path and track progress privately.
+
 ## Start locally
 
 Start Docker Desktop (or Docker Engine with Compose on Linux), then from the repository root:
@@ -54,22 +61,9 @@ are documented in [the infrastructure runbook](infra/README.md). The retained
 foundation and disposable application use separate states; application teardown
 preserves backup storage and Terraform state history.
 
-## Developer onboarding
+## Codex MCP setup
 
-Start with the [developer and shared onboarding checklists](docs/onboarding-checklists.md)
-to see what runs per person/machine and what the team sets up once per environment.
-
-For permanent AWS CLI/Terraform installation and personal IAM-user login, start
-with [local infrastructure setup](infra/local-setup/README.md). It covers macOS,
-Linux/WSL2, corporate certificates, persistent profiles and connecting a fresh
-checkout to the team's existing remote state. Each developer authenticates with
-their own IAM user; only the designated operator bootstraps shared infrastructure.
-
-Corporate proxy users can save their CA settings once with
-`bash scripts/configure-corporate-ca.sh "$HOME/.certs/combined-ca.pem"`;
-new zsh terminals then load them automatically. See the setup guide for details.
-
-For developer onboarding, fill in `GITHUB_PAT_TOKEN` and `POSTMAN_API_KEY` in your private `.env`, then run:
+For the optional developer integrations, fill in `GITHUB_PAT_TOKEN` and `POSTMAN_API_KEY` in your private `.env`, then run:
 
 ```sh
 uv run --frozen python scripts/onboard.py

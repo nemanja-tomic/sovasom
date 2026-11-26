@@ -1,7 +1,7 @@
 # Permanent local AWS and Terraform setup
 
-Use the [onboarding checklists](../../docs/onboarding-checklists.md) to track the
-developer and shared-environment paths. This guide provides the developer commands.
+Start with the [onboarding checklists](../../docs/onboarding-checklists.md).
+This guide is the detailed command reference for the developer path.
 
 Follow this guide on each developer's workstation. Each developer signs in with
 their own IAM user in their deployment's AWS account; profile names are local labels,

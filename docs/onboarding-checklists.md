@@ -1,9 +1,17 @@
 # Onboarding checklists
 
-There are two onboarding paths: **developer setup** for each person/machine, and
-**shared setup** for each deployment environment and GitHub repository. Shared
-setup is usually performed once, then maintained as configuration changes. It is
-repeated when creating a new environment or rebuilding retired infrastructure.
+**Start here for repository onboarding.** Choose your path:
+
+- **Joining an existing project:** follow [Developer onboarding](#developer-onboarding).
+  Reuse the team's shared environment through your own IAM profile.
+- **Setting up a new shared environment:** complete developer setup through AWS
+  identity verification, follow [Shared onboarding](#shared-onboarding), then
+  finish connecting your checkout to remote state.
+
+Developer setup runs per person/machine. Shared setup runs per deployment
+environment and GitHub repository, then is maintained as configuration changes.
+Repeat shared setup when creating another environment or rebuilding retired
+infrastructure.
 
 This page is the checklist; the linked guides contain the commands. Keep this
 public copy unchecked. Track personal progress and actual deployment values in
@@ -16,10 +24,6 @@ private notes and ignored local configuration.
 | Ignored Terraform configuration and backend initialization | Each fresh checkout |
 | Shared AWS resources, DNS and GitHub Actions variables | Designated operator, once per environment/repository |
 | Login renewal, configuration changes and recovery exercises | Recurring work after onboarding |
-
-For the first environment, the operator completes developer setup through AWS
-identity verification, performs shared setup, then finishes connecting their
-checkout to remote state. Everyone joining later uses the existing remote state.
 
 ## Developer onboarding
 
@@ -58,7 +62,7 @@ infrastructure; local application development can run without production access.
   [Start locally](../README.md#start-locally)
 - [ ] If using the repository's Codex MCP integrations, configure your own tokens
   and run the separate MCP onboarding command.
-  [Developer integrations](../README.md#developer-onboarding)
+  [Developer integrations](../README.md#codex-mcp-setup)
 
 **Complete when:** your tools and personal login work, your infrastructure
 checkout uses the existing remote state, and any local application/integration
