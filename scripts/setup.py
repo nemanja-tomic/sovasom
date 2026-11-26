@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from dotenv import dotenv_values, unset_key
@@ -12,6 +13,7 @@ from dotenv import dotenv_values, unset_key
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
+    parser.add_argument("--backup-gated", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     path = args.env_file.resolve()
     if not path.is_file():
@@ -48,6 +50,26 @@ def main():
 
     compose("build", "backend", "web")
     compose("up", "-d", "--wait", "db")
+    if not args.backup_gated:
+        probe = subprocess.run(
+            [
+                sys.executable,
+                str(Path(__file__).with_name("backup-host.py")),
+                "probe",
+                "--env-file",
+                str(path),
+            ],
+            env=runtime,
+            capture_output=True,
+            text=True,
+        )
+        if probe.returncode or probe.stdout.strip() != "empty":
+            print(
+                "Existing or unknown database: use scripts/backup.py migrate from the "
+                "Actions controller to verify an off-host backup before migrations.",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
     compose(
         "run",
         "--rm",

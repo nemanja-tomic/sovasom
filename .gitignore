@@ -102,3 +102,9 @@ crash.*.log
 infra/foundation/backend.tf
 !*.tfvars.example
 !*.tfbackend.example
+
+# Backup recipient and recovery material (operator custody)
+backup-recipient.txt
+*.dump
+*.dump.age
+*.agekey

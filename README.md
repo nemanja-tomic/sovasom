@@ -101,3 +101,7 @@ docker run --rm --ipc=host -e STORYBOOK_STATIC=1 -e CI=1 \
 ```
 
 Use `--grep @visual --update-snapshots` only for deliberate visual changes, and inspect every changed image before committing. Component interaction tests also run locally with `npm run test:storybook`. Every production component has stories, including pending, rejected, offline and access-loss states. Pre-commit blocks on frontend Prettier/ESLint/project type checking and backend Ruff.
+
+Existing-database migrations must use the verified off-host backup controller.
+See [backup and recovery](docs/backup-recovery.md) for setup, manual retry,
+freshness checks, the migration gate and isolated restore instructions.

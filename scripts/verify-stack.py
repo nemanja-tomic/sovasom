@@ -57,7 +57,7 @@ def main():
             return subprocess.run(args, env=env, check=True, **kwargs)
 
         try:
-            run(sys.executable, "scripts/setup.py", "--env-file", str(config))
+            run(sys.executable, "scripts/setup.py", "--env-file", str(config), "--backup-gated")
             runtime = dotenv_values(config, interpolate=False)
             assert not any(key.startswith("INITIAL_") for key in runtime)
             assert runtime["DATABASE_PASSWORD"] == values["DATABASE_PASSWORD"]
@@ -86,7 +86,7 @@ def main():
                 "INITIAL_PASSWORD": "changed synthetic password",
             }.items():
                 set_key(config, key, value)
-            run(sys.executable, "scripts/setup.py", "--env-file", str(config))
+            run(sys.executable, "scripts/setup.py", "--env-file", str(config), "--backup-gated")
             assert not any(key.startswith("INITIAL_") for key in dotenv_values(config))
             run("docker", "compose", "--profile", "test", "run", "--build", "--rm", "backend-tests")
             run("npm", "run", "test:e2e", "--", "--grep-invert", "service restart", cwd="frontend")

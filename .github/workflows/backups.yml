@@ -1,0 +1,74 @@
+name: Back up application data
+on:
+  schedule:
+    - cron: '17 4 * * 0'
+    - cron: '47 5 * * *'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Back up, check freshness, or back up then migrate current host checkout
+        type: choice
+        options: [backup, status, migrate]
+        default: backup
+permissions:
+  contents: read
+concurrency:
+  # Deployment must use this same group so backups and migrations cannot overlap.
+  group: office-host-maintenance
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      BACKUP_HOST: ${{ vars.BACKUP_SSH_HOST }}
+      BACKUP_DIRECTORY: ${{ vars.BACKUP_DIRECTORY }}
+      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET_NAME }}
+      BACKUP_PREFIX: ${{ vars.BACKUP_PREFIX }}
+      BACKUP_KNOWN_HOSTS: ${{ secrets.BACKUP_KNOWN_HOSTS }}
+      BACKUP_SSH_KEY: ${{ secrets.BACKUP_SSH_KEY }}
+      OPERATION: ${{ inputs.operation || (github.event.schedule == '47 5 * * *' && 'status' || 'backup') }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          version: '0.13.9'
+      - uses: aws-actions/configure-aws-credentials@v6.3.1
+        with:
+          role-to-assume: ${{ vars.BACKUP_ROLE_ARN }}
+          aws-region: eu-central-1
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-duration-seconds: 3600
+      - name: Create private transport configuration
+        run: |
+          umask 077
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          required = ['BACKUP_HOST', 'BACKUP_DIRECTORY', 'BACKUP_BUCKET', 'BACKUP_PREFIX',
+                      'BACKUP_KNOWN_HOSTS', 'BACKUP_SSH_KEY']
+          if not all(os.environ.get(key) for key in required):
+              raise SystemExit('Missing backup configuration')
+          (root / 'backup-key').write_text(os.environ['BACKUP_SSH_KEY'])
+          (root / 'backup-hosts').write_text(os.environ['BACKUP_KNOWN_HOSTS'] + '\n')
+          (root / 'backup.json').write_text(json.dumps({
+              'host': os.environ['BACKUP_HOST'], 'directory': os.environ['BACKUP_DIRECTORY'],
+              'bucket': os.environ['BACKUP_BUCKET'], 'prefix': os.environ['BACKUP_PREFIX'],
+              'known_hosts': str(root / 'backup-hosts'), 'ssh_identity': str(root / 'backup-key'),
+          }))
+          PY
+      - name: Transfer verified backup or report age
+        run: uv run --frozen python scripts/backup.py --config "$RUNNER_TEMP/backup.json" "$OPERATION"
+      - name: Report failure for operator notification
+        if: failure()
+        run: |
+          echo '::error::Backup failed or stale. Review access and manually retry this workflow. Recovery readiness is not established.'
+          echo 'Backup failed or stale. Manually retry after correcting access or host health.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove transport material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/backup-key" "$RUNNER_TEMP/backup-hosts" "$RUNNER_TEMP/backup.json"
