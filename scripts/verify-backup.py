@@ -1,4 +1,4 @@
-"""Disposable PostgreSQL/age recovery drill and complete backend suite; no operator data."""
+"""Disposable PostgreSQL/age recovery drill; no operator data."""
 
 import json
 import os
@@ -46,7 +46,6 @@ def main():
             "DATABASE_URL": f"postgresql+psycopg://office:synthetic-recovery-only@127.0.0.1:{port}/office",
             "PYTHONPATH": str(Path("backend").resolve()),
         }
-        env["TEST_DATABASE_URL"] = env["DATABASE_URL"]
 
         def run(*args, **kwargs):
             return subprocess.run(args, env=env, check=True, **kwargs)
@@ -164,7 +163,6 @@ def main():
                 f"{time.monotonic() - started:.1f} seconds.",
                 flush=True,
             )
-            run(sys.executable, "-m", "pytest", "-q")
         finally:
             subprocess.run(
                 ["docker", "compose", "--env-file", str(config), "down", "--volumes"],

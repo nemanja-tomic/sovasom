@@ -140,9 +140,14 @@ Before relying on recovery, use a disposable namespace and keep private evidence
   independently accessible credentials/configuration as if the mini were lost.
 
 `PYTHONPATH=backend uv run --frozen python scripts/verify-backup.py` runs a
-synthetic PostgreSQL 19/age drill and all backend tests, then removes only its own
+synthetic PostgreSQL 19/age drill, then removes only its own
 Compose volumes. It checks restored sign-in/access/grants, existing-target
 refusal and corrupt ciphertext. It needs Docker, age and age-keygen. The separate
-recovery CI workflow runs it with pinned tools. SSH/S3 failure tests replace those
-external process boundaries; they are not live OIDC, SSH, notification or timed
-S3 expiry evidence.
+recovery CI workflow runs it with pinned tools on relevant pushes to `main`, weekly
+on Monday at 06:37 UTC, and manually. Relevant changes cover backup/setup scripts,
+migrations, Compose, Python dependencies/tool versions and the backup workflows.
+New runs cancel superseded runs for the same ref. Every push to `main` runs the
+full backend test suite in main CI, with its own disposable PostgreSQL service.
+The recovery drill does not repeat that suite. Neither workflow requires pull
+requests. SSH/S3 failure tests replace those external process boundaries; they
+are not live OIDC, SSH, notification or timed S3 expiry evidence.

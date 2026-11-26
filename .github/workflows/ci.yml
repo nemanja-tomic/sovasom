@@ -1,11 +1,27 @@
 name: Verify office application
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
 permissions:
   contents: read
 jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:19.0
+        env:
+          POSTGRES_DB: office
+          POSTGRES_USER: office
+          POSTGRES_PASSWORD: synthetic-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U office -d office"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v7.1.0
@@ -15,11 +31,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - uses: astral-sh/setup-uv@v10.4.0
         with:
-          version: '0.13.9'
+          version: "0.13.9"
           enable-cache: true
       - run: uv sync --frozen
       - run: uv run --frozen python scripts/check-public-config.py
-      - run: uv run --frozen pytest backend/tests/test_public_config.py
+      - name: Full backend unit and PostgreSQL integration suite
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://office:synthetic-ci-only@127.0.0.1:5432/office
+        run: uv run --frozen pytest
       - run: npm ci
         working-directory: frontend
       - run: uv run --frozen ruff check
