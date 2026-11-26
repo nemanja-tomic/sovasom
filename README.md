@@ -105,3 +105,5 @@ Use `--grep @visual --update-snapshots` only for deliberate visual changes, and 
 Existing-database migrations must use the verified off-host backup controller.
 See [backup and recovery](docs/backup-recovery.md) for setup, manual retry,
 freshness checks, the migration gate and isolated restore instructions.
+
+Production delivery and pending host acceptance: [Mac mini releases and recovery](docs/mac-mini-deployment.md).

@@ -1,0 +1,30 @@
+name: Configure existing Mac mini
+on: workflow_dispatch
+permissions:
+  contents: read
+concurrency:
+  group: office-host-maintenance
+  cancel-in-progress: false
+jobs:
+  configure:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DEPLOY_HOST: ${{ vars.BACKUP_SSH_HOST }}
+      DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT }}
+      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET_NAME }}
+      BACKUP_PREFIX: ${{ vars.BACKUP_PREFIX }}
+      DEPLOY_SSH_KEY: ${{ secrets.BACKUP_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.BACKUP_KNOWN_HOSTS }}
+      SETUP_JSON: ${{ secrets.HOST_SETUP_JSON }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          version: '0.13.9'
+      - run: python3 scripts/deploy-transport.py
+      - run: uv run --frozen python scripts/configure-host.py "$RUNNER_TEMP/deploy.json"
+      - name: Remove transport material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-hosts" "$RUNNER_TEMP/deploy.json"

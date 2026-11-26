@@ -36,3 +36,16 @@ def test_invalid_configuration_does_not_echo_bootstrap_secrets(tmp_path, monkeyp
     with pytest.raises(ValueError) as error:
         Settings(_env_file=path)
     assert "synthetic secret never logged" not in str(error.value)
+
+
+def test_database_password_can_be_read_from_explicit_secret_file(tmp_path, monkeypatch):
+    from office.config import Settings
+
+    secret = tmp_path / "password"
+    secret.write_text("synthetic-file-password")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_PASSWORD", raising=False)
+    monkeypatch.setenv("DATABASE_PASSWORD_FILE", str(secret))
+    settings = Settings(_env_file=None)
+    assert "synthetic-file-password" in settings.database_url
+    assert "synthetic-file-password" not in repr(settings)

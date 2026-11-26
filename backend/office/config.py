@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     database_url: str = Field(default="", repr=False)
     database_password: SecretStr | None = Field(default=None, repr=False)
+    database_password_file: Path | None = Field(default=None, repr=False)
     database_host: str = "db"
     public_origin: str = "https://testserver"
 
@@ -34,6 +35,13 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def connection_url(self):
+        if self.database_password_file:
+            try:
+                self.database_password = SecretStr(
+                    self.database_password_file.read_text().rstrip("\n")
+                )
+            except OSError:
+                raise ValueError("Cannot read DATABASE_PASSWORD_FILE") from None
         if not self.database_url:
             if not self.database_password or not self.database_password.get_secret_value():
                 raise ValueError("Set DATABASE_PASSWORD or DATABASE_URL")

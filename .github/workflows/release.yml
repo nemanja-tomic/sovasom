@@ -1,0 +1,86 @@
+name: Release to the Mac mini
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  browsers:
+    uses: ./.github/workflows/e2e.yml
+  publish:
+    needs: [verify, browsers]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend: ${{ steps.images.outputs.backend }}
+      web: ${{ steps.images.outputs.web }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Publish immutable linux/amd64 images
+        id: images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$RUNNER_TEMP/registry"
+          mkdir -m 700 "$DOCKER_CONFIG"
+          trap 'docker logout ghcr.io >/dev/null 2>&1; rm -rf "$DOCKER_CONFIG"' EXIT
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
+          repository="${GITHUB_REPOSITORY,,}"
+          for service in backend web; do
+            tag="ghcr.io/$repository-$service:$GITHUB_SHA"
+            docker build --platform linux/amd64 -f "Dockerfile.$service" -t "$tag" .
+            docker push "$tag"
+            digest=$(docker inspect --format='{{index .RepoDigests 0}}' "$tag")
+            echo "$service=$digest" >> "$GITHUB_OUTPUT"
+          done
+  deploy:
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: office-host-maintenance
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    env:
+      BACKEND_IMAGE: ${{ needs.publish.outputs.backend }}
+      WEB_IMAGE: ${{ needs.publish.outputs.web }}
+      REGISTRY_USER: ${{ github.actor }}
+      REGISTRY_TOKEN: ${{ github.token }}
+      DEPLOY_HOST: ${{ vars.BACKUP_SSH_HOST }}
+      DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT }}
+      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET_NAME }}
+      BACKUP_PREFIX: ${{ vars.BACKUP_PREFIX }}
+      DEPLOY_SSH_KEY: ${{ secrets.BACKUP_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.BACKUP_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          version: '0.13.9'
+      - uses: aws-actions/configure-aws-credentials@v6.3.1
+        with:
+          role-to-assume: ${{ vars.BACKUP_ROLE_ARN }}
+          aws-region: eu-central-1
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+          role-duration-seconds: 3600
+      - name: Configure verified transport
+        run: python3 scripts/deploy-transport.py
+      - name: Reject superseded revisions
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Backup-gated release
+        run: uv run --frozen python scripts/deploy.py --config "$RUNNER_TEMP/deploy.json" --release "$GITHUB_SHA" deploy
+      - name: Remove transport material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy-key" "$RUNNER_TEMP/deploy-hosts" "$RUNNER_TEMP/deploy.json"

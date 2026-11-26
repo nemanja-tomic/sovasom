@@ -17,3 +17,31 @@ Parent: [Approved office-ordering specification](../../office-ordering/spec.md)
 ## Implementation and verification context
 
 Use the approved spec and its resolved decision provenance as authority. No product discovery is required. Use existing shared design-system and application test seams where available; add only the pieces this slice needs. All application behavior is server-authorized and PostgreSQL-backed; applicable tests use synthetic isolated data and never notify colleagues. Add component stories and focused units with behavior changes, and run the relevant full-stack Playwright workflows before completion. Record checks that cannot run. Operational slices record equivalent plan/smoke/recovery evidence on isolated resources. Do not alter the parent spec or resolved decision tickets as part of claiming/completing this ticket.
+
+## Comments
+
+### Implementation — 26 November 2026
+
+Implemented Linux test/E2E-gated digest image publication, serialized verified-SSH
+release and host configuration workflows, private persistent production Compose,
+explicit database secret-file reads, backup/upload-gated migrations, first-only
+bootstrap, health activation, retained prior release/schema records, conservative
+rollback refusal, real PostgreSQL role-password rotation and post-login recovery
+that respects failed maintenance. See `docs/mac-mini-deployment.md` for setup,
+recovery, secret custody and the private operational acceptance checklist.
+
+Ticket 16 remains pending live acceptance; its backup gate is preserved. This
+issue remains open for real Intel mini support/licensing, SSH/GHCR/Keychain, DNS/
+public TLS/network, real S3 restore, password rotation and cold-boot evidence.
+The current app has no worker or later ordering workflows; those deployment
+acceptance checks must follow their implementations. No live outcomes are claimed.
+
+Local verification passed: full backend suite (67 tests against disposable
+PostgreSQL), Ruff, frontend formatting/lint/types, workflow YAML parsing, production
+Compose configuration, backend/web image builds, real secret-file mounts,
+initializer reruns and SPA/API readiness. Playwright MCP exercised synthetic
+sign-in, persisted session after database/backend restart and sign-out. The local
+certificate issuer was bypassed only in that isolated browser context; public TLS
+is unverified. The full multi-browser CI suite is wired as a release prerequisite
+and was not run locally. Standards and Spec reviews have no remaining blocking
+findings after fixes and regression coverage. Private logs remain ignored.

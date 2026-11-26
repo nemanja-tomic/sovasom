@@ -15,3 +15,17 @@
         file_server
     }
 }
+
+# Internal-only readiness traverses the same API upstream and verifies the SPA asset.
+:8080 {
+    @ready path /ready
+    handle @ready {
+        reverse_proxy backend:8000 {
+            rewrite /api/health
+        }
+    }
+    handle {
+        root * /srv
+        file_server
+    }
+}

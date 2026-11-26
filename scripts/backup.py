@@ -68,12 +68,12 @@ class Transfer:
         )
         return json.loads(result.stdout)
 
-    def backup(self, kind):
+    def backup(self, kind, source_command="uv run --frozen python scripts/backup-host.py backup"):
         with tempfile.TemporaryDirectory(prefix="office-ciphertext-") as directory:
             root = Path(directory)
             archive = root / "archive.age"
             with archive.open("wb") as output:
-                self.remote("uv run --frozen python scripts/backup-host.py backup", stdout=output)
+                self.remote(source_command, stdout=output)
             with archive.open("rb") as source:
                 header = source.read(32)
             if archive.stat().st_size < 32 or not header.startswith(b"age-encryption.org/v1\n"):

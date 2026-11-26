@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Back up, check freshness, or back up then migrate current host checkout
+        description: Back up or check freshness; use release workflow for deployment migrations
         type: choice
-        options: [backup, status, migrate]
+        options: [backup, status]
         default: backup
 permissions:
   contents: read

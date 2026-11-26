@@ -1,5 +1,7 @@
 name: Verify office application
 on:
+  workflow_call:
+  pull_request:
   push:
     branches: [main]
 permissions:

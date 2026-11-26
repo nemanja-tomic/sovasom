@@ -151,3 +151,13 @@ full backend test suite in main CI, with its own disposable PostgreSQL service.
 The recovery drill does not repeat that suite. Neither workflow requires pull
 requests. SSH/S3 failure tests replace those external process boundaries; they
 are not live OIDC, SSH, notification or timed S3 expiry evidence.
+
+## Production release integration
+
+For the Mac mini use [the release controller](mac-mini-deployment.md), rather than
+`backup.py migrate`/`scripts/setup.py`. The release controller stops writes and
+reuses `Transfer.backup` before running pinned-image migrations. The manual backup
+workflow now offers backup/status only. Set `BACKUP_DIRECTORY` to the deployed
+`<root>/current`; its nonsecret `.env` selects `compose.release.yaml`, the stable
+`office` project and external secret paths. This keeps scheduled backups attached
+to the same persistent database across release directories.
