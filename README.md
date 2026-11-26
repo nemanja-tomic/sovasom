@@ -56,6 +56,9 @@ preserves backup storage and Terraform state history.
 
 ## Developer onboarding
 
+Start with the [developer and shared onboarding checklists](docs/onboarding-checklists.md)
+to see what runs per person/machine and what the team sets up once per environment.
+
 For permanent AWS CLI/Terraform installation and personal IAM-user login, start
 with [local infrastructure setup](infra/local-setup/README.md). It covers macOS,
 Linux/WSL2, corporate certificates, persistent profiles and connecting a fresh

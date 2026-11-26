@@ -1,5 +1,8 @@
 # AWS infrastructure and operator recovery
 
+Use the [onboarding checklists](../docs/onboarding-checklists.md) for the developer
+and shared-environment sequences; this runbook contains their detailed commands.
+
 Ticket 15 owns AWS storage, policies, workflow identities and the application DNS
 record. The Mac mini, Docker, runtime `.env`, containers, database volumes and
 Caddy certificate keys belong to host automation in ticket 17. Encrypted database
